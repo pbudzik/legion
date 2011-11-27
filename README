@@ -1,0 +1,11 @@
+--Legion--
+
+Minimalistic REST services framework for Clojure
+
+* succinct but expressible
+* convention over configuration
+* server/client unified
+* scalable
+* clustered
+* failover
+* leightweight
