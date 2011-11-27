@@ -36,7 +36,7 @@
   (is (= 3 ((find-handler {:method :post :uri "/foo/3"} test-services) {}))))
 
 (deftest server
-  (defn baz [input] {:status 200 :content (str input)})
+  (defn baz [rq] {:status 200 :content (str rq)})
   (defservices s1
     (GET "/" baz)
     (GET "/foo/:id" baz)

@@ -26,7 +26,7 @@
   (:require [clj-http.client :as client])
   )
 
-(defn pipeline-factory [^SimpleChannelUpstreamHandler handler]
+(defn- pipeline-factory [^SimpleChannelUpstreamHandler handler]
   (proxy [ChannelPipelineFactory] []
     (getPipeline []
       (doto (Channels/pipeline)
@@ -44,25 +44,29 @@
             :params (.getParameters (QueryStringDecoder. (.getUri rq)))
             }))
 
-(defn request-handler [handler]
+(defn- rs-status [^Integer code]
+  (case code
+    200 (HttpResponseStatus/OK)
+    404 (HttpResponseStatus/NOT_FOUND)
+    ;TODO ...
+    (HttpResponseStatus/OK)))
+
+(defn- request-handler [handler]
   (proxy [SimpleChannelUpstreamHandler] []
     (messageReceived [ctx e]
       (let [rq (.getMessage e)
             method (.getMethod rq)
             channel (.getChannel e)
-            rs (DefaultHttpResponse. (HttpVersion/HTTP_1_1) (HttpResponseStatus/OK))
-            ]
-        (.setContent rs (ChannelBuffers/copiedBuffer (:content (process rq handler)) (CharsetUtil/UTF_8)))
+            handler-rs (process rq handler)
+            rs (DefaultHttpResponse. (HttpVersion/HTTP_1_1) (rs-status (:status handler-rs)))]
+        (.setContent rs (ChannelBuffers/copiedBuffer (:content handler-rs) (CharsetUtil/UTF_8)))
         (.setHeader rs "Content-type" "text/plain; charset=UTF-8")
-        (.addListener (.write channel rs) (ChannelFutureListener/CLOSE))
-        )
+        (.addListener (.write channel rs) (ChannelFutureListener/CLOSE)))
       )
 
     (exceptionCaught [ctx e]
       (error "http-server error: " e)
-      (.close (.getChannel e))
-      )
-    )
+      (.close (.getChannel e))))
   )
 
 (defn server-start [port handler]
@@ -78,9 +82,8 @@
   (.releaseExternalResources (:bootstrap server))
   (debug "server " server " stopped"))
 
-
-(println "----")
-(defn h [rq] (println rq) {:content "chuj"})
+;-----
+(defn h [rq] (println rq) {:status 200 :content "foo" :headers {:foo 1}})
 (def s (server-start 8080 h))
 (println s)
 (try

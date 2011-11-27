@@ -42,13 +42,9 @@
     )
   )
 
-(defn- convert [m] (let [m (into {} (map (juxt #(keyword (key %)) #(val %)) m))]
-                     (assoc m :method (:method m))))
-
 (defn- services-handler [services]
-  (fn [input]
-    (let [input (convert input)
-          handler ((find-handler input services) input)]
+  (fn [rq]
+    (let [handler ((find-handler rq services) rq)]
       (debug "handler: " handler)
       handler)))
 
