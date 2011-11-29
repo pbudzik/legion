@@ -1,14 +1,24 @@
 (ns legion.client
   (:use [legion.utils]
         [legion.logging]
+        [legion.cluster]
         [cheshire.core])
   (:require [clj-http.client :as client]))
 
-(defn build-url [options args]
+(defn parse-servers [servers]
+  (map #(str "http://" %) (split servers ",")))
+
+(defn round-robin [context urls]
+  (let [index (:last @context)
+        url (nth urls index)]
+    (swap! context assoc :last (mod (+ 1 index) (count urls)))
+    url))
+
+(defn build-url [context options args]
   (cond
-    (:url options) (str (:url options) "/" (apply str (interpose "/" args)))
-    (:servers options) "foo"
-    (:cluster options) "foo"
+    (:url options) (str (normalize-uri (:url options)) "/" (apply str (interpose "/" args)))
+    (:servers options) (round-robin (parse-servers (:servers options)))
+    (:cluster options) (select-url (:cluster options))
     ))
 
 (defn resolve-method [^String name options]
@@ -18,8 +28,9 @@
 
 (defmacro defclient [name options args]
   `(defn ~name [~@args & c#]
+     (def context# (atom {}))
      (debug "content: " c#)
-     (let [url# (build-url ~options ~args)
+     (let [url# (build-url context# ~options ~args)
            json# (generate-string (first c#))]
        (debug "url: " url# ", json: " json#)
        (case (resolve-method (str ~name) ~options)
@@ -33,10 +44,20 @@
 
 ;-----
 
-(defclient get-bar {:url "http://wp.pl:80"} [id x])
-(get-bar 1 2)
+(def ctx (atom {:last 0}))
+
+(println (round-robin ctx (parse-servers "localhost:8080,localhost:9090")))
+(println (round-robin ctx (parse-servers "localhost:8080,localhost:9090")))
+(println (round-robin ctx (parse-servers "localhost:8080,localhost:9090")))
+(println (round-robin ctx (parse-servers "localhost:8080,localhost:9090")))
+(println (round-robin ctx (parse-servers "localhost:8080,localhost:9090")))
+
+;(defclient get-bar {:url "http://wp.pl:80"} [id x])
+
+;(get-bar 1 2)
 
 ;(defclient get-baz {:servers "wp.pl:80,onet.pl:80" :uri "/foo"} [id x])
 ;(get-baz 1 2)
 
 ;(defclient get-baz {:cluster "foo" :uri "/foo"} [id x])
+

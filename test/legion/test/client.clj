@@ -17,8 +17,9 @@
   (is (= :get (resolve-method "add-foo" {:method :get}))))
 
 (deftest url
-  (is (= "http://foo.com/1/2/3" (build-url {:url "http://foo.com"} [1 2 3])))
-
+  (is (= "http://foo.com/1/2/3" (build-url {} {:url "http://foo.com"} [1 2 3])))
+  (is (= "http://foo.com/aa/bb/c" (build-url {} {:url "http://foo.com/"} ["aa" "bb" "c"])))
+  (is (= "http://foo.com/" (build-url {} {:url "http://foo.com"} [])))
   )
 
 (run-tests)

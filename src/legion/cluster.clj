@@ -1,6 +1,8 @@
 (ns legion.cluster
-  (:use [legion.logging]
-        [legion.services]))
+  (:use [legion.services]
+        [legion.logging]
+        [legion.utils])
+  (:import [org.jgroups JChannel ReceiverAdapter]))
 
 (System/setProperty "java.net.preferIPv4Stack" "true")
 
@@ -31,15 +33,30 @@
     (.setProtocolStack channel stack)
     (.init stack)))
 
+(def SERVER "S")
+
+(def CLIENT "C")
+
 (def instance-id (str (java.util.UUID/randomUUID)))
 
-(defn- node-name [port] (str instance-id ":" port ":S"))
+(defn- node-name [type port] (str instance-id ":" port ":" type))
 
-(defn connect [name port]
-  (let [channel (org.jgroups.JChannel.)]
-    (.setName channel (node-name port))
+(defn- server? [name] (ends-with (str name) (str ":" SERVER)))
+
+(defn receiver [context]
+  (proxy [org.jgroups.ReceiverAdapter] []
+    (viewAccepted [view] (debug "view: " (.getMembers view))
+      (if context
+        (let [servers (filter server? (.getMembers view))]
+          (swap! context assoc :servers servers)
+          (debug "context: " @context))))))
+
+(defn connect [type name port & [context]]
+  (let [channel (JChannel.)]
+    (.setName channel (node-name type port))
     (debug channel)
     (configure channel)
+    (.setReceiver channel (receiver context))
     (.connect channel name)
     channel))
 
@@ -47,11 +64,14 @@
   (.close channel))
 
 (defn clustered-start [cluster port services]
-  {:server (start port services) :channel (connect cluster port)})
+  {:server (start port services) :channel (connect SERVER cluster port)})
 
 (defn clustered-stop [node]
   (stop (:server node))
   (disconnect (:channel node)))
 
+(defn select-url [cluster] "http://localhost:8080/foo")
 
+;-----
 
+(disconnect (connect SERVER "foo" 9999 (atom {})))

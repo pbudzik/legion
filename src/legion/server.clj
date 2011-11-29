@@ -23,8 +23,7 @@
            [org.jboss.netty.channel ChannelFutureListener]
            [org.jboss.netty.handler.codec.http QueryStringDecoder]
            )
-  (:require [clj-http.client :as client])
-  )
+  (:require [clj-http.client :as client]))
 
 (defn- pipeline-factory [^SimpleChannelUpstreamHandler handler]
   (proxy [ChannelPipelineFactory] []
@@ -61,8 +60,7 @@
             rs (DefaultHttpResponse. (HttpVersion/HTTP_1_1) (rs-status (:status handler-rs)))]
         (.setContent rs (ChannelBuffers/copiedBuffer (:content handler-rs) (CharsetUtil/UTF_8)))
         (.setHeader rs "Content-type" "text/plain; charset=UTF-8")
-        (.addListener (.write channel rs) (ChannelFutureListener/CLOSE)))
-      )
+        (.addListener (.write channel rs) (ChannelFutureListener/CLOSE))))
 
     (exceptionCaught [ctx e]
       (error "http-server error: " e)

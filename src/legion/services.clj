@@ -23,8 +23,7 @@
       (let [pairs (partition 2 (interleave t1 t2))
             results (map #(match-tokens (first %) (last %)) pairs)]
         (if (some nil? results) nil (merge (reduce merge results) {})))
-      nil)
-    ))
+      nil)))
 
 (defn match-rq [rq pattern]
   (if (= (:method rq)
@@ -38,9 +37,7 @@
         handler (if (empty? f2) H_404 (services (:pattern f2)))]
     (if (= handler H_404)
       handler
-      (fn [input] (handler (assoc input :ext (:result f2)))))
-    )
-  )
+      (fn [input] (handler (assoc input :ext (:result f2)))))))
 
 (defn- services-handler [services]
   (fn [rq]
