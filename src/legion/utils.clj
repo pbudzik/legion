@@ -12,6 +12,12 @@
   "Returns a string w/o the first character"
   [^String s] (.substring s 1 (count s)))
 
-(defn normalize-uri [^String uri]
-  (if (.endsWith uri "/") (.substring uri 0 (- (.length uri) 1)) uri))
+(defn normalize-url [^String url]
+  (if (.endsWith url "/") (.substring url 0 (- (.length url) 1)) url))
+
+(defn select [coll key] (nth coll (mod (hash key) (count coll))))
+
+(defmacro do-when [expr fun]
+  `(when ~expr (~fun ~expr)))
+
 

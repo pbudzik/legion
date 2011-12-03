@@ -3,6 +3,7 @@
         [legion.core]
         [legion.services]
         [legion.client]
+        [legion.cluster]
         [legion.handler]
         [legion.logging]
         [cheshire.core])
@@ -59,6 +60,22 @@
   (warn "warn")
   (error "error")
   (trace "trace"))
+
+(deftest cluster
+  (defservices cs
+    (GET "/foo/:id/:x" H_200))
+
+  (defclient get-baz {:cluster "foo-cluster" :uri "/foo" :mask true} [id x])
+
+  (let [services (cluster-start "foo-cluster" 8080 cs)]
+    (try
+      (is (= 200 (:status (get-baz 1 2))))
+      (finally
+        (cluster-stop services)
+        )))
+
+  (get-baz-destroy)
+  )
 
 (run-tests)
 

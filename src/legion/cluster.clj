@@ -2,7 +2,7 @@
   (:use [legion.services]
         [legion.logging]
         [legion.utils])
-  (:import [org.jgroups JChannel ReceiverAdapter]))
+  (:import [org.jgroups JChannel ReceiverAdapter Event Address PhysicalAddress]))
 
 (System/setProperty "java.net.preferIPv4Stack" "true")
 
@@ -41,37 +41,59 @@
 
 (defn- node-name [type port] (str instance-id ":" port ":" type))
 
-(defn- server? [name] (ends-with (str name) (str ":" SERVER)))
+(defn- server? [^String name] (ends-with name (str ":" SERVER)))
 
-(defn receiver [context]
+(defn- parse-port [^String name] (nth (split name ":") 1))
+
+(defn- server [name ipa]
+  (str (.getHostAddress (.getIpAddress ipa)) ":" (parse-port name)))
+
+(defn- servers [channel view]
+  (map #(server (str %) (.down channel (Event. (Event/GET_PHYSICAL_ADDRESS) %))) (filter #(server? (str %)) (.getMembers view))))
+
+(defn- receiver [channel context]
   (proxy [org.jgroups.ReceiverAdapter] []
-    (viewAccepted [view] (debug "view: " (.getMembers view))
+    (viewAccepted [view]
+      (debug "view: " (.getMembers view))
       (if context
-        (let [servers (filter server? (.getMembers view))]
-          (swap! context assoc :servers servers)
+        (do
+          (swap! context assoc :servers (servers channel view))
           (debug "context: " @context))))))
 
-(defn connect [type name port & [context]]
-  (let [channel (JChannel.)]
-    (.setName channel (node-name type port))
-    (debug channel)
-    (configure channel)
-    (.setReceiver channel (receiver context))
-    (.connect channel name)
-    channel))
+(defn connect
+  ([type name port] (connect type name port (atom {})))
+  ([type name port context]
+    (let [channel (JChannel.)]
+      (.setName channel (node-name type port))
+      (debug channel)
+      (configure channel)
+      (.setReceiver channel (receiver channel context))
+      (.connect channel name)
+      channel)))
 
 (defn disconnect [channel]
+  (debug "disconnecting: " channel)
   (.close channel))
 
-(defn clustered-start [cluster port services]
+(defn cluster-start [cluster port services]
   {:server (start port services) :channel (connect SERVER cluster port)})
 
-(defn clustered-stop [node]
+(defn cluster-stop [node]
   (stop (:server node))
   (disconnect (:channel node)))
 
-(defn select-url [cluster] "http://localhost:8080/foo")
+(defn- mask
+  "Local IPs masking with 'localhost' to avoid getting non-accessbile IPs"
+  [server]
+  (str "localhost:" (last (split server ":"))))
 
-;-----
+(defn cluster-select
+  "Select a node from a cluster by hashing key"
+  [context cluster key]
+  (if (nil? (:channel @context)) (swap! context assoc :channel (connect CLIENT cluster 0 context)))
+  (debug "servers found: " (:servers @context))
+  (let [server (select (:servers @context) (str key (System/nanoTime)))
+        elected (if (= true (:mask @context)) (mask server) server)]
+    (debug "server elected: " elected)
+    elected))
 
-(disconnect (connect SERVER "foo" 9999 (atom {})))

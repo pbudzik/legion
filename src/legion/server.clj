@@ -64,8 +64,7 @@
 
     (exceptionCaught [ctx e]
       (error "http-server error: " e)
-      (.close (.getChannel e))))
-  )
+      (.close (.getChannel e)))))
 
 (defn server-start [port handler]
   (let [factory (pipeline-factory (request-handler handler))
