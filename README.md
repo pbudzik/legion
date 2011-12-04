@@ -1,18 +1,15 @@
---Legion--
-==========
-
-Minimalistic REST services framework for Clojure
-------------------------------------------------
+Legion - Minimalistic REST services framework for Clojure
+---------------------------------------------------------
 
 ### Core concepts ###
 
-* succinct but expressible
-* convention over configuration
-* server/client unified
-* scalable
-* clustered
-* failover
-* leightweight
+* succinct but expressible -> lots of macros used, less is more
+* convention over configuration -> save time by typing less
+* server/client unified -> both share the same conventions
+* scalable -> not about one instance, but many
+* clustered -> join a cluster and work w/o configuration
+* failover -> many nodes
+* leightweight -> not many dependencies, no external processes needed
 
 ```clj
 (defproject my-project "1.0.0"
@@ -28,9 +25,15 @@ Minimalistic REST services framework for Clojure
   (GET "/user/:id" my-handler))
 ```
 ### Defining service consumer ###
+
+By convention it is GET. It will build a dedicated consumer function to GET this
+service with an argument "id".
+
 ```clj
 (defclient get-user {:cluster "my-cluster" :uri "/user"} [id])
 ```
+It also creates a function to destroy it when done to disconnect from the cluster.
+
 ### Consuming services ###
 ```clj
 (let [services (cluster-start "my-cluster" 8080 my-services)]
