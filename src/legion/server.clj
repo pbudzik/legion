@@ -59,7 +59,7 @@
             handler-rs (process rq handler)
             rs (DefaultHttpResponse. (HttpVersion/HTTP_1_1) (rs-status (:status handler-rs)))]
         (.setContent rs (ChannelBuffers/copiedBuffer (:content handler-rs) (CharsetUtil/UTF_8)))
-        (.setHeader rs "Content-type" "text/plain; charset=UTF-8")
+        (.setHeader rs "Content-type" (or-else (:content-type handler-rs) CONTENT_TYPE_TEXT_PLAIN))
         (.addListener (.write channel rs) (ChannelFutureListener/CLOSE))))
 
     (exceptionCaught [ctx e]
@@ -78,12 +78,3 @@
 (defn server-stop [server]
   (.releaseExternalResources (:bootstrap server))
   (debug "server " server " stopped"))
-
-;-----
-(defn h [rq] (println rq) {:status 200 :content "foo" :headers {:foo 1}})
-(def s (server-start 8080 h))
-(println s)
-(try
-  (do
-    (println (client/get "http://localhost:8080/ss?a=1")))
-  (finally (server-stop s)))

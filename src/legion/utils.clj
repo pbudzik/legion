@@ -17,7 +17,12 @@
 
 (defn select [coll key] (nth coll (mod (hash key) (count coll))))
 
-(defmacro do-when [expr fun]
+(defmacro do-when
+  "Apply fun to expr if expr is evaluates to true"
+  [expr fun]
   `(when ~expr (~fun ~expr)))
 
-
+(defn or-else
+  "Use expr if not nil otherwise default"
+  [expr default]
+  (if (nil? expr) default expr))

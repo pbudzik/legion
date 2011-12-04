@@ -23,9 +23,9 @@
   (is (= nil (:result (match-rq {:method :post :uri "/"} {:method :get :uri "/"})))))
 
 (deftest routing
-  (defn h1 [input] 1)
-  (defn h2 [input] 2)
-  (defn h3 [input] 3)
+  (defn h1 [rq] 1)
+  (defn h2 [rq] 2)
+  (defn h3 [rq] 3)
   (defservices test-services
     (GET "/" h1)
     (GET "/foo/:id" h2)
@@ -72,10 +72,8 @@
       (is (= 200 (:status (get-baz 1 2))))
       (finally
         (cluster-stop services)
-        )))
-
-  (get-baz-destroy)
-  )
+        (get-baz-destroy))
+      )))
 
 (run-tests)
 

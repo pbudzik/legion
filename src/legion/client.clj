@@ -20,23 +20,25 @@
     (cond
       (starts-with name "get-") :get (starts-with name "update-") :put (starts-with name "delete-") :delete (starts-with name "add-") :post :else :get )))
 
-(defmacro defclient [name options args]
-  (let [destroyer (symbol (str name "-destroy"))]
-    `(do
-       (def context# (atom ~options))
-       (defn ~destroyer [] (do-when (:channel @context#) disconnect))
-       (defn ~name [~@args & c#]
-         (debug "content: " c#)
-         (let [url# (build-url context# ~options ~args)
-               json# (generate-string (first c#))]
-           (debug "url: " url# ", json: " json#)
-           (case (resolve-method (str ~name) ~options)
-             :get (client/get url#)
-             :post (client/post url#)
-             :put (client/post url#)
-             :delete (client/post url#)
-             :head (client/head url#))
-           )))))
+(defmacro defclient
+  "Defines a function being a consumer of specific service"
+  [name options args]
+  `(do
+     (def context# (atom ~options))
+     (defn ~(symbol (str name "-destroy")) [] (do-when (:channel @context#) disconnect))
+     (defn ~name [~@args & c#]
+       (debug "content: " c#)
+       (let [url# (build-url context# ~options ~args)
+             json# (generate-string (first c#))]
+         (debug "url: " url# ", json: " json#)
+         (case (resolve-method (str ~name) ~options)
+           :get (client/get url#)
+           :post (client/post url#)
+           :put (client/post url#)
+           :delete (client/post url#)
+           :head (client/head url#))
+         ))))
+
 ;-----
 
 (macroexpand '(defclient get-baz {:cluster "foo" :uri "/foo"} [id x]))

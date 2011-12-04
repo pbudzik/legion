@@ -6,7 +6,9 @@
 
 (System/setProperty "java.net.preferIPv4Stack" "true")
 
-(defn- configure [channel]
+(defn- configure
+  "All the trickery needed to configure a channel"
+  [channel]
   (let [stack (org.jgroups.stack.ProtocolStack.)]
     (.addProtocol stack
       (doto (org.jgroups.protocols.UDP.)
@@ -75,20 +77,14 @@
   (debug "disconnecting: " channel)
   (.close channel))
 
-(defn cluster-start [cluster port services]
-  {:server (start port services) :channel (connect SERVER cluster port)})
-
-(defn cluster-stop [node]
-  (stop (:server node))
-  (disconnect (:channel node)))
-
 (defn- mask
-  "Local IPs masking with 'localhost' to avoid getting non-accessbile IPs"
-  [server]
+  "Local IPs masking with 'localhost' to avoid getting non-accessbile IPs e.g. wlan interfaces.
+  Useful in local mode"
+  [^String server]
   (str "localhost:" (last (split server ":"))))
 
 (defn cluster-select
-  "Select a node from a cluster by hashing key"
+  "Select node from a cluster by hashing key"
   [context cluster key]
   (if (nil? (:channel @context)) (swap! context assoc :channel (connect CLIENT cluster 0 context)))
   (debug "servers found: " (:servers @context))

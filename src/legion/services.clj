@@ -2,8 +2,7 @@
   (:use [legion.utils]
         [legion.handler]
         [legion.logging]
-        [legion.server]
-        [cheshire.core]))
+        [legion.server]))
 
 (defn- parse-uri [^String uri] (first (split uri "\\?")))
 
@@ -57,6 +56,5 @@
 (defmacro PUT [uri handler] `(add-handler :put ~uri ~handler))
 (defmacro DELETE [uri handler] `(add-handler :delete ~uri ~handler))
 (defmacro defservices [name & body] `(def ~name (merge ~@body)))
-(defmacro error-response [code message] `{:status 502 :content (generate-string {:error ~code :message ~message})})
 (defmacro gen-services [name mapping] `{})
 
