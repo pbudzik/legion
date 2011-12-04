@@ -5,6 +5,7 @@ Legion - Minimalistic REST services framework for Clojure
 
 * succinct but expressible -> lots of macros used, less is more
 * convention over configuration -> save time by typing less
+* netty/http/json -> simple
 * server/client unified -> both share the same conventions
 * scalable -> not about one instance, but many
 * clustered -> join a cluster and work w/o configuration
@@ -25,14 +26,13 @@ Legion - Minimalistic REST services framework for Clojure
   (GET "/user/:id" my-handler))
 ```
 ### Defining service consumer ###
-
-By convention it is GET. It will build a dedicated consumer function to GET this
-service with an argument "id".
-
 ```clj
 (defclient get-user {:cluster "my-cluster" :uri "/user"} [id])
 ```
+By convention it is GET. It builds a dedicated consumer function to GET this
+service with an argument "id".
 It also creates a function to destroy it when done to disconnect from the cluster.
+Note, it only needs to know the cluster name.
 
 ### Consuming services ###
 ```clj
